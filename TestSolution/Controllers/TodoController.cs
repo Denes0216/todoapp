@@ -28,8 +28,7 @@ public class TodoController : Controller
     public Todo GetById(int id, [FromServices] MySqlConnection connection)
     {
         var sqlQuery = "SELECT * FROM todos WHERE id=" + id;
-        var result = connection.QuerySingle(sqlQuery);
-        return result;
+        return connection.QuerySingle<Todo>(sqlQuery);
     }
 
     [HttpPost("")]
