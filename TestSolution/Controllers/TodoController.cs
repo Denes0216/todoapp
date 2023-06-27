@@ -24,7 +24,7 @@ public class TodoController : Controller
         return resultList;
     }
 
-    [HttpGet("/todos/{id}")]
+    [HttpGet("{id}")]
     public Todo GetById(int id, [FromServices] MySqlConnection connection)
     {
         var sqlQuery = "SELECT * FROM todos WHERE id=" + id;
