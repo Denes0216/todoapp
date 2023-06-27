@@ -6,24 +6,17 @@ using TestSolution.Models;
 namespace TestSolution.Controllers;
 
 [ApiController]
-[Route("/")]
-public class WeatherForecastController : Controller
+[Route("/todos")]
+public class TodoController : Controller
 {
-    public List<Todo> todos = new List<Todo>();
+    private readonly ILogger<TodoController> _logger;
 
-    private static readonly string[] Summaries = new[]
-    {
-        "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-    };
-
-    private readonly ILogger<WeatherForecastController> _logger;
-
-    public WeatherForecastController(ILogger<WeatherForecastController> logger)
+    public TodoController(ILogger<TodoController> logger)
     {
         _logger = logger;
     }
 
-    [HttpGet("todos")]
+    [HttpGet("")]
     public List<Todo> GetTodos([FromServices] MySqlConnection connection)
     {
         const string sqlQuery = "SELECT * FROM todos";
@@ -39,7 +32,7 @@ public class WeatherForecastController : Controller
         return result;
     }
 
-    [HttpPost("todos")]
+    [HttpPost("")]
     public OkObjectResult PostTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection)
     {
         const string sqlQuery =
@@ -53,7 +46,7 @@ public class WeatherForecastController : Controller
         return Ok(todo);
     }
 
-    [HttpPut("todos/{id}")]
+    [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
     public OkObjectResult UpdateTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection, string id)
     {
@@ -68,7 +61,7 @@ public class WeatherForecastController : Controller
         return Ok(todo);
     }
 
-    [HttpDelete("todos/{id}")]
+    [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult DeleteTodo([FromServices] MySqlConnection connection, string id)
