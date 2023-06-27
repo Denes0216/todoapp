@@ -23,18 +23,6 @@ public class WeatherForecastController : Controller
         _logger = logger;
     }
 
-    // [HttpGet(Name = "GetWeatherForecast")]
-    // public IEnumerable<WeatherForecast> Get()
-    // {
-    //     return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-    //         {
-    //             Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-    //             TemperatureC = Random.Shared.Next(-20, 55),
-    //             Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-    //         })
-    //         .ToArray();
-    // }
-
     [HttpGet("todos")]
     public List<Todo> GetTodos([FromServices] MySqlConnection connection)
     {
@@ -95,6 +83,11 @@ public class WeatherForecastController : Controller
             return Ok(todo);
         }
         catch (ArgumentOutOfRangeException e)
+        {
+            Console.WriteLine(e);
+            return BadRequest();
+        }
+        catch (MySqlException e)
         {
             Console.WriteLine(e);
             return BadRequest();
