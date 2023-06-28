@@ -119,6 +119,6 @@ public class TodoController : Controller
 
     private static bool VerifyTodoDto(TodoDto todoDto)
     {
-        return todoDto.Completed == null || string.IsNullOrEmpty(todoDto.Text);
+        return todoDto.Completed == null || string.IsNullOrWhiteSpace(todoDto.Text);
     }
 }
