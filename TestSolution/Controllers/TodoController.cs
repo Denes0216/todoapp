@@ -17,9 +17,12 @@ public class TodoController : Controller
     }
 
     [HttpGet("")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult GetTodos([FromServices] MySqlConnection connection, [FromQuery] bool? completed)
     {
-        var sqlQuery = completed != null ? "SELECT * FROM todos WHERE completed=" + completed 
+        var sqlQuery = completed != null
+            ? "SELECT * FROM todos WHERE completed=" + completed
             : "SELECT * FROM todos";
         try
         {
@@ -32,65 +35,71 @@ public class TodoController : Controller
         }
     }
 
-    [HttpGet("{id}")]
-    public Todo GetById(int id, [FromServices] MySqlConnection connection)
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IActionResult GetById(int id, [FromServices] MySqlConnection connection)
     {
         var sqlQuery = "SELECT * FROM todos WHERE id=" + id;
-        return connection.QuerySingle<Todo>(sqlQuery);
+        try
+        {
+            return Ok(connection.QuerySingle<Todo>(sqlQuery));
+        }
+        catch (InvalidOperationException e)
+        {
+            Console.WriteLine(e);
+            return NotFound();
+        }
     }
-
+    
     [HttpPost("")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult PostTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection)
     {
         if (VerifyTodoDto(todoDto))
         {
             return BadRequest();
         }
-        
+
         const string sqlQuery =
             "INSERT INTO todos (text, completed) VALUES (@Text, @Completed);" +
             "SELECT * FROM todos WHERE text=@Text AND completed=@Completed";
 
         var result = connection.QueryMultiple(sqlQuery, todoDto);
 
-        var todo = result.Read<Todo>().ToList()[0];
-
-        return Ok(todo);
+        return Ok(result.ReadFirst<Todo>());
     }
 
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
-    public IActionResult UpdateTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection, string id)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult UpdateTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection, int id)
     {
         if (VerifyTodoDto(todoDto))
         {
             return BadRequest();
         }
-        
+
         var sqlQuery =
             "UPDATE todos SET completed=@Completed, text=@Text WHERE id=" + id + ";" +
             "SELECT * FROM todos WHERE text=@Text AND completed=@Completed";
         try
         {
             var result = connection.QueryMultiple(sqlQuery, todoDto);
-            return Ok(result.Read<Todo>().ToList()[0]);
+            return Ok(result.ReadFirst<Todo>());
         }
         catch (ArgumentOutOfRangeException e)
         {
             Console.WriteLine(e);
             return BadRequest();
         }
-        catch (MySqlException e)
-        {
-            Console.WriteLine(e);
-            return BadRequest();
-        }
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult DeleteTodo([FromServices] MySqlConnection connection, string id)
+    public IActionResult DeleteTodo([FromServices] MySqlConnection connection, int id)
     {
         var sqlQuery =
             "SELECT * FROM todos WHERE id=" + id + "; " +
@@ -106,15 +115,10 @@ public class TodoController : Controller
             Console.WriteLine(e);
             return BadRequest();
         }
-        catch (MySqlException e)
-        {
-            Console.WriteLine(e);
-            return BadRequest();
-        }
     }
 
     private static bool VerifyTodoDto(TodoDto todoDto)
     {
-        return todoDto.Text == null || todoDto.Completed == null || todoDto.Text == "";
+        return todoDto.Completed == null || string.IsNullOrEmpty(todoDto.Text);
     }
 }
