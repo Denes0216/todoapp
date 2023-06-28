@@ -17,11 +17,19 @@ public class TodoController : Controller
     }
 
     [HttpGet("")]
-    public List<Todo> GetTodos([FromServices] MySqlConnection connection)
+    public IActionResult GetTodos([FromServices] MySqlConnection connection, [FromQuery] bool? completed)
     {
-        const string sqlQuery = "SELECT * FROM todos";
-        var resultList = connection.Query<Todo>(sqlQuery).ToList();
-        return resultList;
+        var sqlQuery = completed != null ? "SELECT * FROM todos WHERE completed=" + completed 
+            : "SELECT * FROM todos";
+        try
+        {
+            return Ok(connection.Query<Todo>(sqlQuery).ToList());
+        }
+        catch (ArgumentOutOfRangeException e)
+        {
+            Console.WriteLine(e);
+            return BadRequest();
+        }
     }
 
     [HttpGet("{id}")]
@@ -32,8 +40,13 @@ public class TodoController : Controller
     }
 
     [HttpPost("")]
-    public OkObjectResult PostTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection)
+    public IActionResult PostTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection)
     {
+        if (VerifyTodoDto(todoDto))
+        {
+            return BadRequest();
+        }
+        
         const string sqlQuery =
             "INSERT INTO todos (text, completed) VALUES (@Text, @Completed);" +
             "SELECT * FROM todos WHERE text=@Text AND completed=@Completed";
@@ -47,17 +60,31 @@ public class TodoController : Controller
 
     [HttpPut("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Todo))]
-    public OkObjectResult UpdateTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection, string id)
+    public IActionResult UpdateTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection, string id)
     {
+        if (VerifyTodoDto(todoDto))
+        {
+            return BadRequest();
+        }
+        
         var sqlQuery =
             "UPDATE todos SET completed=@Completed, text=@Text WHERE id=" + id + ";" +
             "SELECT * FROM todos WHERE text=@Text AND completed=@Completed";
-
-        var result = connection.QueryMultiple(sqlQuery, todoDto);
-
-        var todo = result.Read<Todo>().ToList()[0];
-
-        return Ok(todo);
+        try
+        {
+            var result = connection.QueryMultiple(sqlQuery, todoDto);
+            return Ok(result.Read<Todo>().ToList()[0]);
+        }
+        catch (ArgumentOutOfRangeException e)
+        {
+            Console.WriteLine(e);
+            return BadRequest();
+        }
+        catch (MySqlException e)
+        {
+            Console.WriteLine(e);
+            return BadRequest();
+        }
     }
 
     [HttpDelete("{id}")]
@@ -84,5 +111,10 @@ public class TodoController : Controller
             Console.WriteLine(e);
             return BadRequest();
         }
+    }
+
+    private static bool VerifyTodoDto(TodoDto todoDto)
+    {
+        return todoDto.Text == null || todoDto.Completed == null || todoDto.Text == "";
     }
 }
