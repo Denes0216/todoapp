@@ -12,7 +12,7 @@ public class TodoDto
 
     public int Id { get; set; }
 
-    public string Text
+    public string? Text
     {
         get => _text;
         set => _text = value ?? throw new ArgumentNullException(nameof(value));
