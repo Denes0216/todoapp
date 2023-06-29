@@ -21,6 +21,7 @@ public class TodoController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult GetTodos([FromServices] MySqlConnection connection, [FromQuery] bool? completed)
     {
+        _logger.Log(LogLevel.Information, "Get todos was called");
         var sqlQuery = completed != null
             ? "SELECT * FROM todos WHERE completed=" + completed
             : "SELECT * FROM todos";
@@ -61,7 +62,8 @@ public class TodoController : Controller
         {
             return BadRequest();
         }
-
+        _logger.Log(LogLevel.Information, "Post was called", todoDto);
+        
         const string sqlQuery =
             "INSERT INTO todos (text, completed) VALUES (@Text, @Completed);" +
             "SELECT * FROM todos WHERE text=@Text AND completed=@Completed";
@@ -76,6 +78,7 @@ public class TodoController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public IActionResult UpdateTodo([FromBody] TodoDto todoDto, [FromServices] MySqlConnection connection, int id)
     {
+        _logger.Log(LogLevel.Information, "Put was called", todoDto);
         if (VerifyTodoDto(todoDto))
         {
             return BadRequest();
